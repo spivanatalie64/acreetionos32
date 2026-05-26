@@ -35,11 +35,11 @@ cat > pacman.conf << 'PACMAN'
 [options]
 Architecture = i686
 [core]
-Server = https://mirror.archlinux32.org/i686/$repo
+Server = https://mirror.archlinux32.org/$repo/core/os/i686
 [extra]
-Server = https://mirror.archlinux32.org/i686/$repo
+Server = https://mirror.archlinux32.org/$repo/extra/os/i686
 [community]
-Server = https://mirror.archlinux32.org/i686/$repo
+Server = https://mirror.archlinux32.org/$repo/community/os/i686
 PACMAN
 
 mkarchiso -v -w /work -o /output .
