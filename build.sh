@@ -32,6 +32,7 @@ base-devel
 linux
 linux-firmware
 grub
+syslinux
 efibootmgr
 networkmanager
 cinnamon
