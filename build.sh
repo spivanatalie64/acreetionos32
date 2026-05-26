@@ -3,49 +3,58 @@
 set -e
 WORK=$(mktemp -d)
 ISO_NAME="AcreetionOS32-$(date +%Y%m%d)-i686.iso"
+SCRIPT="/tmp/build32.sh"
+OUTDIR="/tmp/ac32-output"
+mkdir -p "$OUTDIR"
+
 echo "=== Building $ISO_NAME ==="
 
-docker run --privileged --rm -v $PWD:/repo archlinux:latest bash -c "
-  set -e
-  pacman -Sy --noconfirm archiso git
+# Write the inner build script to avoid quoting issues
+cat > "$SCRIPT" << 'INNER'
+#!/bin/bash
+set -e
+pacman -Sy --noconfirm archiso git
 
-  # Clone the AcreetionOS source
-  git clone https://github.com/acreetionos-code/acreetionos.git /source
-  cd /source
+git clone https://github.com/acreetionos-code/acreetionos.git /source
+cd /source
 
-  # Modify profiledef.sh for 32-bit
-  sed -i 's/arch=\"x86_64\"/arch=\"i686\"/' profiledef.sh
-  sed -i 's/iso_name=.*/iso_name=\"AcreetionOS32\"/' profiledef.sh
-  sed -i 's/iso_label=.*/iso_label=\"ACREETIONOS32\"/' profiledef.sh
-  # Remove unsupported UEFI boot modes for i686
-  sed -i '/uefi/d' profiledef.sh
-  sed -i "s/bootmodes=(.*)/bootmodes=('bios.syslinux')/" profiledef.sh
+# Modify for 32-bit
+sed -i 's/arch="x86_64"/arch="i686"/' profiledef.sh
+sed -i 's/iso_name=.*/iso_name="AcreetionOS32"/' profiledef.sh
+sed -i 's/iso_label=.*/iso_label="ACREETIONOS32"/' profiledef.sh
+sed -i '/uefi/d' profiledef.sh
+sed -i 's/bootmodes=(.*)/bootmodes=("bios.syslinux")/' profiledef.sh
 
-  # Create 32-bit package list if needed
-  if [ -f packages.x86_64 ]; then
-    cp packages.x86_64 packages.i686 || true
-  fi
-  if [ -f bootstrap_packages.x86_64 ]; then
-    cp bootstrap_packages.x86_64 bootstrap_packages.i686 || true
-  fi
+# Package lists
+for f in packages.x86_64 bootstrap_packages.x86_64; do
+  [ -f "$f" ] && cp "$f" "${f%.x86_64}.i686" || true
+done
 
-  # Update pacman.conf for 32-bit
-  cat > pacman.conf << 'PACMAN'
+# 32-bit pacman.conf
+cat > pacman.conf << 'PACMAN'
 [options]
 Architecture = i686
 [core]
-Server = https://mirror.archlinux32.org/i686/\$repo
+Server = https://mirror.archlinux32.org/i686/$repo
 [extra]
-Server = https://mirror.archlinux32.org/i686/\$repo
+Server = https://mirror.archlinux32.org/i686/$repo
 [community]
-Server = https://mirror.archlinux32.org/i686/\$repo
+Server = https://mirror.archlinux32.org/i686/$repo
 PACMAN
 
-  # Build
-  mkarchiso -v -w /work -o /output . 2>&1
-" 2>&1
+mkarchiso -v -w /work -o /output .
+INNER
 
-# Move ISO
-mv /output/*.iso . 2>/dev/null || true
+chmod +x "$SCRIPT"
+docker run --privileged --rm -v "$SCRIPT:$SCRIPT" -v "$OUTDIR:/output" archlinux:latest bash "$SCRIPT" 2>&1
+
+# Find and rename ISO
+ISO=$(find "$OUTDIR" -name "*.iso" 2>/dev/null | head -1)
+if [ -n "$ISO" ]; then
+  cp "$ISO" "./$ISO_NAME"
+  echo "✓ ISO produced: $ISO_NAME"
+else
+  echo "No ISO found in $OUTDIR"
+  ls -la "$OUTDIR" 2>/dev/null || true
+fi
 echo "=== Complete ==="
-ls -lh *.iso 2>/dev/null || echo "No ISO produced"
