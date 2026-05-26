@@ -53,7 +53,7 @@ wget
 curl
 PKGS
 
-# 32-bit pacman.conf
+# 32-bit pacman.conf with fallback mirrors
 cat > pacman.conf << 'PACMAN'
 [options]
 Architecture = i686
@@ -61,12 +61,15 @@ SigLevel = Never
 
 [core]
 Server = https://mirror.archlinux32.org/i686/$repo
+Server = https://archive.archlinux32.org/i686/$repo
 
 [extra]
 Server = https://mirror.archlinux32.org/i686/$repo
+Server = https://archive.archlinux32.org/i686/$repo
 
 [community]
 Server = https://mirror.archlinux32.org/i686/$repo
+Server = https://archive.archlinux32.org/i686/$repo
 PACMAN
 
 # Workaround for file conflicts: remove conflicting pycache before install
