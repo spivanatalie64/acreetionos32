@@ -1,19 +1,75 @@
 #!/bin/bash
-# AcreetionOS32 — build 32-bit ISO from Arch Linux 32-bit repos
+# AcreetionOS32 — proper Arch Linux 32-bit ISO build
 set -e
 WORK=$(mktemp -d)
+OUTDIR="/tmp/acreetionos32-output"
+mkdir -p "$OUTDIR"
 ISO_NAME="AcreetionOS32-$(date +%Y%m%d)-i686.iso"
-echo "=== Building $ISO_NAME ==="
 
-# Build in Arch container
-docker run --privileged --rm archlinux:latest bash -c "
-  pacman -Sy --noconfirm archiso git && \
-  git clone https://github.com/AcreetionOS-Code/acreetionos /tmp/src && \
-  cd /tmp/src && \
-  # Patch for 32-bit
-  sed -i 's/x86_64/i686/g' profiledef.sh 2>/dev/null || true && \
-  mkarchiso -L ACREETIONOS32 -o /output .
-" 2>&1 && cp /tmp/acreetionos32-*.iso /tmp/ISO_NAME 2>/dev/null || true
+docker run --privileged --rm -v $OUTDIR:/output archlinux:latest bash -c "
+  set -e
+  pacman -Sy --noconfirm archiso git
 
-echo "=== Build complete ==="
-ls -lh *.iso 2>/dev/null || echo "No ISO produced"
+  # Create a proper mkarchiso profile directory for i686
+  mkdir -p /profile/airootfs/root
+  mkdir -p /profile/efiboot
+  mkdir -p /profile/syslinux
+
+  # pacman.conf for 32-bit
+  cat > /profile/pacman.conf << 'PACMAN'
+[options]
+Architecture = i686
+[core]
+Server = https://mirror.archlinux32.org/i686/\$repo
+[extra]
+Server = https://mirror.archlinux32.org/i686/\$repo
+[community]
+Server = https://mirror.archlinux32.org/i686/\$repo
+PACMAN
+
+  # Package list
+  cat > /profile/packages.i686 << 'PKGS'
+base
+base-devel
+linux
+linux-firmware
+cinnamon
+calamares
+calamares_config
+grub
+efibootmgr
+networkmanager
+xorg-server
+xorg-xinit
+nano
+vim
+sudo
+PKGS
+
+  # profiledef.sh
+  cat > /profile/profiledef.sh << 'PROFILE'
+#!/usr/bin/env bash
+iso_name='AcreetionOS32'
+iso_label='ACREETIONOS32_\$(date +%Y%m)'
+iso_publisher='AcreetionOS'
+iso_application='AcreetionOS 32-bit Install Media'
+iso_version='\$(date +%Y.%m)'
+install_dir='arch'
+buildmodes=('iso')
+bootmodes=('bios.syslinux.mbr' 'bios.syslinux.eltorito' 'uefi-x64.grub.esp' 'uefi-x64.grub.eltorito')
+arch='i686'
+pacman_conf='pacman.conf'
+airootfs_image_type='squashfs'
+airootfs_image_tool_options=('-comp' 'xz')
+PROFILE
+
+  chmod +x /profile/profiledef.sh
+
+  # Build the ISO
+  mkarchiso -v -w /work -o /output /profile 2>&1
+
+  echo '=== Build complete ==='
+  ls -lh /output/
+" 2>&1
+
+echo "Done"
