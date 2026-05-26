@@ -17,6 +17,9 @@ docker run --privileged --rm -v $PWD:/repo archlinux:latest bash -c "
   sed -i 's/arch=\"x86_64\"/arch=\"i686\"/' profiledef.sh
   sed -i 's/iso_name=.*/iso_name=\"AcreetionOS32\"/' profiledef.sh
   sed -i 's/iso_label=.*/iso_label=\"ACREETIONOS32\"/' profiledef.sh
+  # Remove unsupported UEFI boot modes for i686
+  sed -i '/uefi/d' profiledef.sh
+  sed -i "s/bootmodes=(.*)/bootmodes=('bios.syslinux')/" profiledef.sh
 
   # Create 32-bit package list if needed
   if [ -f packages.x86_64 ]; then
