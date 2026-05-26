@@ -24,6 +24,7 @@ sed -i 's/iso_name=.*/iso_name="AcreetionOS32"/' profiledef.sh
 sed -i 's/iso_label=.*/iso_label="ACREETIONOS32"/' profiledef.sh
 sed -i 's/bootmodes=(.*)/bootmodes=("bios.syslinux")/' profiledef.sh
 sed -i '/uefi/d' profiledef.sh
+sed -i '/archiso_pxe_nfs/d' profiledef.sh
 
 # Use a curated 32-bit package list instead of filtering
 cat > packages.i686 << 'PKGS'
@@ -73,7 +74,6 @@ Server = https://archive.archlinux32.org/i686/$repo
 PACMAN
 
 # Fix archiso compatibility: remove missing hooks
-sed -i '/archiso_pxe_nfs/d' profiledef.sh 2>/dev/null || true
 # Workaround for file conflicts: remove conflicting pycache before install
 find /work -path "*/__pycache__/*" -delete 2>/dev/null || true
 # Retry the build with overwrite
