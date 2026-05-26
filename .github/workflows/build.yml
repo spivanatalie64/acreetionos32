@@ -10,16 +10,42 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build ISO
         run: bash build.sh
+      - name: Checksums & ZIP
+        run: |
+          sha256sum *.iso > SHA256SUMS
+          md5sum *.iso > MD5SUMS
+          zip -9 "$(basename *.iso .iso).iso.zip" *.iso && ls -lh *.zip
       - name: Upload to R2
         env:
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT }}
+          CF_TOKEN: ${{ secrets.CF_TOKEN }}
+          BUCKET: acreetionos-32bit
         run: |
-          ISO=$(ls *.iso 2>/dev/null | head -1)
-          [ -z "$ISO" ] && echo "No ISO" && exit 0
-          BUCKET="acreetionos-iso"
-          curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/r2/buckets" \
-            -H "Authorization: Bearer $CF_TOKEN" -d "{\"name\":\"$BUCKET\"}" || true
-          U=$(curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/r2/buckets/$BUCKET/objects/${ISO}/upload" \
-            -H "Authorization: Bearer $CF_TOKEN" -d '{}' | python3 -c "import sys,json; print(json.load(sys.stdin).get('result',{}).get('uploadURL',''))")
-          [ -n "$U" ] && curl -s -X PUT "$U" --data-binary @"$ISO" && echo "✓ Uploaded $ISO" || echo "Upload failed"
+          for F in *.iso *.zip SHA256SUMS; do
+            [ ! -f "$F" ] && continue; N=$(basename "$F")
+            curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/r2/buckets" -H "Authorization: Bearer $CF_TOKEN" -d '{"name":"'$BUCKET'"}' || true
+            U=$(curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/r2/buckets/$BUCKET/objects/${N}/upload" -H "Authorization: Bearer $CF_TOKEN" -d '{}' | python3 -c "import sys,json;print(json.load(sys.stdin).get('result',{}).get('uploadURL',''))")
+            [ -n "$U" ] && curl -s -X PUT "$U" --data-binary @"$F" && echo "Uploaded $N" || echo "Upload of $N failed"
+          done
+      - name: Upload to Internet Archive
+        env:
+          IA_ACCESS: ${{ secrets.IA_ACCESS_KEY }}
+          IA_SECRET: ${{ secrets.IA_SECRET_KEY }}
+        run: |
+          I=$(ls *.iso 2>/dev/null | head -1); [ -z "$I" ] && exit 0; [ -z "$IA_ACCESS" ] && echo "No IA creds, skipping" && exit 0
+          N=$(basename "$I"); ITEM="AcreetionOS32-$(date +%Y%m%d)"
+          curl -s --location --header "authorization: LOW $IA_ACCESS:$IA_SECRET" \
+            --header "x-archive-meta01-collection: opensource" \
+            --header "x-archive-meta-title: AcreetionOS32 $N" \
+            --header "x-archive-meta-description: Weekly 32-bit build" \
+            --header "x-archive-meta-mediatype: software" \
+            "https://s3.us.archive.org/$ITEM/$N" --upload-file "$I" && echo "Uploaded to IA" || echo "IA upload failed"
+      - name: Upload to SourceForge
+        env:
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+        run: |
+          I=$(ls *.iso 2>/dev/null | head -1); [ -z "$I" ] && exit 0; [ -z "$SF_USERNAME" ] && echo "No SF creds, skipping" && exit 0
+          N=$(basename "$I")
+          curl -s -T "$I" "https://sourceforge.net/projects/acreetionos-iso-image/files/32bit/$N" \
+            --user "$SF_USERNAME:$SF_PASSWORD" && echo "Uploaded to SF" || echo "SF upload failed"
