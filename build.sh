@@ -72,6 +72,8 @@ Server = https://mirror.archlinux32.org/i686/$repo
 Server = https://archive.archlinux32.org/i686/$repo
 PACMAN
 
+# Fix archiso compatibility: remove missing hooks
+sed -i '/archiso_pxe_nfs/d' profiledef.sh 2>/dev/null || true
 # Workaround for file conflicts: remove conflicting pycache before install
 find /work -path "*/__pycache__/*" -delete 2>/dev/null || true
 # Retry the build with overwrite
