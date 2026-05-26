@@ -27,7 +27,7 @@ sed -i '/uefi/d' profiledef.sh
 
 # Package lists — strip known ACR-specific and AUR-only packages
 for f in packages.x86_64 bootstrap_packages.x86_64; do
-  [ -f "$f" ] && grep -v -E "calamares-config|pamac|autologger|electron3|lib32-nettle|python312-main|acreetion|customizepkg|czkawka|mintstick|nemo-|xviewer|xed|xreader|bullet-dbus" "$f" > "${f%.x86_64}.i686" || true
+  [ -f "$f" ] && grep -v -E "calamares|mkinitcpio-openswap|pamac|autologger|electron3|lib32-nettle|python312-main|acreetion|customizepkg|czkawka|mintstick|nemo-|xviewer|xed|xreader|bullet-dbus" "$f" > "${f%.x86_64}.i686" || true
 done
 
 # 32-bit pacman.conf
