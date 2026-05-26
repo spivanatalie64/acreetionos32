@@ -58,7 +58,6 @@ cat > pacman.conf << 'PACMAN'
 [options]
 Architecture = i686
 SigLevel = Never
-Overwrite = *
 
 [core]
 Server = https://mirror.archlinux32.org/i686/$repo
@@ -70,7 +69,7 @@ Server = https://mirror.archlinux32.org/i686/$repo
 Server = https://mirror.archlinux32.org/i686/$repo
 PACMAN
 
-mkarchiso -v -w /work -o /output .
+PACMAN_OPTS='--overwrite="*"' mkarchiso -v -w /work -o /output .
 INNER
 
 chmod +x "$SCRIPT"
