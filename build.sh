@@ -69,6 +69,7 @@ Server = https://mirror.archlinux32.org/i686/$repo
 Server = https://mirror.archlinux32.org/i686/$repo
 PACMAN
 
+export PACMAN_OPTS="--overwrite '*'"
 mkarchiso -v -w /work -o /output .
 INNER
 
