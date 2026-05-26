@@ -69,7 +69,16 @@ Server = https://mirror.archlinux32.org/i686/$repo
 Server = https://mirror.archlinux32.org/i686/$repo
 PACMAN
 
-PACMAN_OPTS='--overwrite="*"' mkarchiso -v -w /work -o /output .
+# Workaround for file conflicts: remove conflicting pycache before install
+find /work -path "*/__pycache__/*" -delete 2>/dev/null || true
+# Retry the build with overwrite
+mkdir -p /work/i686/airootfs 2>/dev/null || true
+mkarchiso -v -w /work -o /output . || {
+  # If mkarchiso fails, try building with explicit overwrite 
+  echo "mkarchiso failed — retrying with overwrite..."
+  rm -rf /work/i686/airootfs/usr/lib/python3.11 2>/dev/null || true
+  mkarchiso -v -w /work -o /output . 2>&1
+}
 INNER
 
 chmod +x "$SCRIPT"
