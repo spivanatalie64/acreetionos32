@@ -22,8 +22,8 @@ cd /source
 sed -i 's/arch="x86_64"/arch="i686"/' profiledef.sh
 sed -i 's/iso_name=.*/iso_name="AcreetionOS32"/' profiledef.sh
 sed -i 's/iso_label=.*/iso_label="ACREETIONOS32"/' profiledef.sh
-sed -i '/uefi/d' profiledef.sh
 sed -i 's/bootmodes=(.*)/bootmodes=("bios.syslinux")/' profiledef.sh
+sed -i '/uefi/d' profiledef.sh
 
 # Package lists
 for f in packages.x86_64 bootstrap_packages.x86_64; do
