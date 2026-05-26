@@ -25,10 +25,32 @@ sed -i 's/iso_label=.*/iso_label="ACREETIONOS32"/' profiledef.sh
 sed -i 's/bootmodes=(.*)/bootmodes=("bios.syslinux")/' profiledef.sh
 sed -i '/uefi/d' profiledef.sh
 
-# Package lists — strip known ACR-specific and AUR-only packages
-for f in packages.x86_64 bootstrap_packages.x86_64; do
-  [ -f "$f" ] && grep -v -E "calamares|mkinitcpio-openswap|pamac|autologger|electron3|lib32-nettle|python312-main|acreetion|customizepkg|czkawka|mintstick|nemo-|xviewer|xed|xreader|bullet-dbus" "$f" > "${f%.x86_64}.i686" || true
-done
+# Use a curated 32-bit package list instead of filtering
+cat > packages.i686 << 'PKGS'
+base
+base-devel
+linux
+linux-firmware
+grub
+efibootmgr
+networkmanager
+cinnamon
+cinnamon-translations
+xorg-server
+xorg-xinit
+nano
+sudo
+network-manager-applet
+firefox
+gnome-terminal
+gparted
+os-prober
+ntp
+openssh
+git
+wget
+curl
+PKGS
 
 # 32-bit pacman.conf
 cat > pacman.conf << 'PACMAN'
