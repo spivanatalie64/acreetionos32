@@ -17,8 +17,8 @@ jobs:
           zip -9 "$(basename *.iso .iso).iso.zip" *.iso && ls -lh *.zip
       - name: Upload to R2
         env:
-          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT }}
-          CF_TOKEN: ${{ secrets.CF_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           BUCKET: acreetionos-32bit
         run: |
           for F in *.iso *.zip SHA256SUMS; do
