@@ -1,22 +1,33 @@
 #!/bin/bash
-# AcreetionOS32 — proper Arch Linux 32-bit ISO build
+# AcreetionOS32 — clone acreetionos source and build for i686
 set -e
 WORK=$(mktemp -d)
-OUTDIR="/tmp/acreetionos32-output"
-mkdir -p "$OUTDIR"
 ISO_NAME="AcreetionOS32-$(date +%Y%m%d)-i686.iso"
+echo "=== Building $ISO_NAME ==="
 
-docker run --privileged --rm -v $OUTDIR:/output archlinux:latest bash -c "
+docker run --privileged --rm -v $PWD:/repo archlinux:latest bash -c "
   set -e
   pacman -Sy --noconfirm archiso git
 
-  # Create a proper mkarchiso profile directory for i686
-  mkdir -p /profile/airootfs/root
-  mkdir -p /profile/efiboot
-  mkdir -p /profile/syslinux
+  # Clone the AcreetionOS source
+  git clone https://github.com/acreetionos-code/acreetionos.git /source
+  cd /source
 
-  # pacman.conf for 32-bit
-  cat > /profile/pacman.conf << 'PACMAN'
+  # Modify profiledef.sh for 32-bit
+  sed -i 's/arch=\"x86_64\"/arch=\"i686\"/' profiledef.sh
+  sed -i 's/iso_name=.*/iso_name=\"AcreetionOS32\"/' profiledef.sh
+  sed -i 's/iso_label=.*/iso_label=\"ACREETIONOS32\"/' profiledef.sh
+
+  # Create 32-bit package list if needed
+  if [ -f packages.x86_64 ]; then
+    cp packages.x86_64 packages.i686 || true
+  fi
+  if [ -f bootstrap_packages.x86_64 ]; then
+    cp bootstrap_packages.x86_64 bootstrap_packages.i686 || true
+  fi
+
+  # Update pacman.conf for 32-bit
+  cat > pacman.conf << 'PACMAN'
 [options]
 Architecture = i686
 [core]
@@ -27,49 +38,11 @@ Server = https://mirror.archlinux32.org/i686/\$repo
 Server = https://mirror.archlinux32.org/i686/\$repo
 PACMAN
 
-  # Package list
-  cat > /profile/packages.i686 << 'PKGS'
-base
-base-devel
-linux
-linux-firmware
-cinnamon
-calamares
-calamares_config
-grub
-efibootmgr
-networkmanager
-xorg-server
-xorg-xinit
-nano
-vim
-sudo
-PKGS
-
-  # profiledef.sh
-  cat > /profile/profiledef.sh << 'PROFILE'
-#!/usr/bin/env bash
-iso_name='AcreetionOS32'
-iso_label='ACREETIONOS32_\$(date +%Y%m)'
-iso_publisher='AcreetionOS'
-iso_application='AcreetionOS 32-bit Install Media'
-iso_version='\$(date +%Y.%m)'
-install_dir='arch'
-buildmodes=('iso')
-bootmodes=('bios.syslinux.mbr' 'bios.syslinux.eltorito' 'uefi-x64.grub.esp' 'uefi-x64.grub.eltorito')
-arch='i686'
-pacman_conf='pacman.conf'
-airootfs_image_type='squashfs'
-airootfs_image_tool_options=('-comp' 'xz')
-PROFILE
-
-  chmod +x /profile/profiledef.sh
-
-  # Build the ISO
-  mkarchiso -v -w /work -o /output /profile 2>&1
-
-  echo '=== Build complete ==='
-  ls -lh /output/
+  # Build
+  mkarchiso -v -w /work -o /output . 2>&1
 " 2>&1
 
-echo "Done"
+# Move ISO
+mv /output/*.iso . 2>/dev/null || true
+echo "=== Complete ==="
+ls -lh *.iso 2>/dev/null || echo "No ISO produced"
