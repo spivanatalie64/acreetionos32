@@ -9,6 +9,11 @@ linux-firmware
 grub
 syslinux
 efibootmgr
+mkinitcpio
+mkinitcpio-archiso
+mkinitcpio-nfs-utils
+mkinitcpio-busybox
+mkinitcpio-systemd-tool
 networkmanager
 network-manager-applet
 cinnamon
