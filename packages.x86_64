@@ -1,0 +1,37 @@
+################################################################################
+# AcreetionOS32 — 32-bit (i686) Community Edition
+# Curated package list for i686 from archlinux32 mirrors.
+################################################################################
+base
+base-devel
+linux
+linux-firmware
+grub
+syslinux
+efibootmgr
+networkmanager
+network-manager-applet
+cinnamon
+cinnamon-translations
+xorg-server
+xorg-xinit
+nano
+sudo
+gnome-terminal
+gparted
+os-prober
+ntp
+openssh
+git
+wget
+curl
+firefox
+python
+alsa-utils
+pipewire-pulse
+wireplumber
+pavucontrol
+lightdm
+lightdm-gtk-greeter
+adwaita-icon-theme
+gnu-free-fonts
