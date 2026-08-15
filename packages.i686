@@ -1,7 +1,4 @@
-################################################################################
-# AcreetionOS32 — 32-bit (i686) Community Edition
-# Curated package list for i686 from archlinux32 mirrors.
-################################################################################
+# AcreetionOS 32 — static package list (verified against Arch repos)
 base
 base-devel
 linux
